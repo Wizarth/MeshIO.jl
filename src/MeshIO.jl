@@ -30,9 +30,9 @@ function load(fn::File{format}; element_types...) where {format}
     end
 end
 
-function save(fn::File{format}, msh::AbstractMesh) where {format}
+function save(fn::File{format}, msh::AbstractMesh; element_types...) where {format}
     open(fn, "w") do s
-        save(s, msh)
+        save(s, msh; element_types...)
     end
 end
 

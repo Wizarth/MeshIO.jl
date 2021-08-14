@@ -53,6 +53,29 @@ end
             mesh_loaded = load(joinpath(tmpdir, "test.obj"))
             @test mesh_loaded == uvn_mesh
         end
+        @testset "load save Float64 OBJ" begin
+            Rect3d = Rect3{Float64}
+            Vec3d = Vec3{Float64}
+            # See https://github.com/JuliaGeometry/GeometryBasics.jl/issues/152 for this difference
+            meshArgs = Dict(:pointtype=>Point3{Float64}, :uv=>Vec2{Float64}, :normaltype=>Vec3{Float64}, :facetype=>GLTriangleFace)
+            loadArgs = Dict(:pointtype=>Point3{Float64}, :uvtype=>Vec2{Float64}, :normaltype=>Vec3{Float64}, :facetype=>GLTriangleFace)
+            meshes = [
+                Rect3d(Vec3d(baselen), Vec3d(dirlen, baselen, baselen)),
+                Rect3d(Vec3d(baselen), Vec3d(baselen, dirlen, baselen)),
+                Rect3d(Vec3d(baselen), Vec3d(baselen, baselen, dirlen))
+            ]
+
+            uvn_mesh = merge(
+                map(meshes) do m
+                  GeometryBasics.mesh(m; meshArgs...)
+                end
+            )
+
+            save(joinpath(tmpdir, "test.obj"), uvn_mesh; loadArgs...)
+            mesh_loaded = load(joinpath(tmpdir, "test.obj"); loadArgs...)
+            @test typeof(mesh_loaded) == typeof(uvn_mesh)
+            @test mesh_loaded == uvn_mesh
+        end
     end
     @testset "Real world files" begin
 

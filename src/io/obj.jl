@@ -21,14 +21,14 @@ function load(io::Stream{format"OBJ"}; facetype=GLTriangleFace,
             command = popfirst!(lines) #first is the command, rest the data
 
             if "v" == command # mesh always has vertices
-                push!(points, Point{3, Float32}(parse.(Float32, lines))) # should automatically convert to the right type in vertices(mesh)
+                push!(points, pointtype(parse.(eltype(pointtype), lines)))
             elseif "vn" == command
-                push!(v_normals, Vec3f(parse.(Float32, lines)))
+                push!(v_normals, normaltype(parse.(eltype(normaltype), lines)))
             elseif "vt" == command
                 if length(lines) == 2
-                    push!(uv, Vec2f(parse.(Float32, lines)))
+                    push!(uv, Vec2{eltype(uvtype)}(parse.(eltype(uvtype), lines)))
                 elseif length(lines) == 3
-                    push!(uv, Vec3f(parse.(Float32, lines)))
+                    push!(uv, Vec3{eltype(uvtype)}(parse.(eltype(uvtype), lines)))
                 else
                     error("Unknown UVW coordinate: $lines")
                 end
@@ -138,20 +138,21 @@ function _typemax(::Type{OffsetInteger{O, T}}) where {O, T}
     typemax(T)
 end
 
-function save(f::Stream{format"OBJ"}, mesh::AbstractMesh)
+function save(f::Stream{format"OBJ"}, mesh::AbstractMesh; facetype=GLTriangleFace,
+        pointtype=Point3f, normaltype=Vec3f, uvtype=Vec2f)
     io = stream(f)
-    for p in decompose(Point3f, mesh)
+    for p in decompose(pointtype, mesh)
         println(io, "v ", p[1], " ", p[2], " ", p[3])
     end
 
     if hasproperty(mesh, :uv)
-        for uv in mesh.uv
+        for uv in decompose(UV(uvtype), mesh)
             println(io, "vt ", uv[1], " ", uv[2])
         end
     end
 
     if hasproperty(mesh, :normals)
-        for n in decompose_normals(mesh)
+        for n in decompose(Normal(normaltype), mesh)
             println(io, "vn ", n[1], " ", n[2], " ", n[3])
         end
     end
